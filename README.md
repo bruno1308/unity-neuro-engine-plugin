@@ -1,217 +1,120 @@
 # Neuro-Engine Plugin
 
-Autonomous AI-driven Unity game development plugin for Claude Code.
+An AI-powered Unity game development plugin for [Claude Code](https://claude.ai/claude-code).
 
-## Overview
+Build complete games from Game Design Documents with autonomous AI agents.
 
-The Neuro-Engine Plugin provides orchestration, validation, and evaluation tools for building Unity games from Game Design Documents (GDDs) with minimal human intervention.
+## What is This?
 
----
+The Neuro-Engine Plugin enables Claude Code to:
+- **Orchestrate** multiple AI agents working in parallel
+- **Generate** 3D models, textures, and audio via Meshy.ai and ElevenLabs
+- **Evaluate** gameplay using vision language models (Gemini)
+- **Persist** progress across sessions
 
-## MANDATORY: Orchestration Rules
+## Quick Start
 
-**When implementing a GDD, you MUST follow the orchestration rules in `ORCHESTRATION_RULES.md`.**
-
-### Key Rules
-
-1. **Mayor Never Implements** - Delegate to polecat agents, never use MCP tools directly
-2. **3 MCP Call Limit** - Max 3 MCP calls before spawning an agent
-3. **Parallel Execution** - Spawn independent agents simultaneously
-4. **Mandatory Verification** - Eyes Polecat must verify all integrations
-5. **No Self-Approval** - Work flows through verification agents
-
-### Quick Start for GDD Implementation
-
-```
-# CORRECT: Use orchestration skill
-/neuro-engine:orchestrate start Assets/Iteration1/GDD.md
-
-# CORRECT: Manual Mayor pattern with parallel agents
-Task 1: script-polecat → "Write all scripts"
-Task 2: scene-polecat → "Set up scene"
-Task 3: asset-polecat → "Generate audio"
-[All run in parallel]
-
-# WRONG: Direct implementation
-mcp__unity-mcp__create_script (violation!)
-mcp__unity-mcp__manage_gameobject (violation!)
-```
-
-### Enforcement
-
-- **Hooks** warn on direct MCP tool use
-- **Agent frontmatter** restricts tool access
-- **Verification checklist** must pass before completion
-
----
-
-## Installation
-
-### From Local Path
+### 1. Clone the Main Engine Repository
 
 ```bash
-claude --plugin-dir ./neuro-engine
+git clone --recurse-submodules https://github.com/bruno1308/unity-neuro-engine.git
+cd unity-neuro-engine
 ```
 
-### From Marketplace (Future)
+### 2. Set Up API Keys
+
+Copy `.env.example` to `.env` and add your keys:
 
 ```bash
-/plugin install neuro-engine@neuro-engine-marketplace
+MESHY_API_KEY=your_meshy_key        # 3D generation (meshy.ai)
+ELEVENLABS_API_KEY=your_key         # Audio generation
+GEMINI_API_KEY=your_key             # Video analysis
 ```
+
+### 3. Open in Unity
+
+Open the project in Unity 6+ with the Universal Render Pipeline.
+
+### 4. Start Claude Code
+
+```bash
+cd unity-neuro-engine
+claude
+```
+
+### 5. Create Your First Game
+
+```
+/neuro-engine:iteration create "My Breakout Clone"
+```
+
+Then edit `Assets/Iteration1/GDD.md` with your game design.
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `/neuro:iteration create\|status\|list` | Manage game iterations |
-| `/neuro:blocker "<description>"` | Create GitHub issue with layer attribution |
-| `/neuro:evaluate [tier] [target]` | Run evaluation tiers (1-5) |
-| `/neuro:orchestrate start\|status\|abort` | Start/manage Mayor orchestration |
-
-### Examples
-
-```bash
-# Create a new iteration
-/neuro:iteration create "Doom Clone"
-
-# Check current status
-/neuro:iteration status
-
-# Report a blocker
-/neuro:blocker "MCP cannot detect UI button clicks"
-
-# Run full evaluation
-/neuro:evaluate all
-
-# Start autonomous development
-/neuro:orchestrate start Assets/Iteration1/GDD.md
-```
-
-## Skills
-
-Skills are invoked proactively by Claude when relevant:
-
-| Skill | Trigger |
-|-------|---------|
-| `validate` | Before development work, after setup changes |
-| `status` | When asking about progress, at session start |
-| `unity-state` | When asking about scene state |
-| `hooks-persist` | After completing tasks |
-| `layer-review` | When modifying engine core |
-| `meshy` | When creating 3D assets |
-| `elevenlabs` | When creating audio |
-
-## Agents
-
-Agents are spawned via the Task tool for complex work:
-
-| Agent | Role |
-|-------|------|
-| `mayor` | Orchestrates work, assigns tasks |
-| `script-polecat` | Writes C# code |
-| `scene-polecat` | Modifies scenes/prefabs |
-| `asset-polecat` | Generates assets |
-| `eyes-polecat` | Observes game state |
-| `evaluator` | Grades quality |
-| `game-tester` | Finds bugs |
-| `game-fixer` | Fixes bugs |
-| `code-reviewer-layers` | Reviews engine changes |
+| `/neuro-engine:iteration` | Create, list, or check iteration status |
+| `/neuro-engine:orchestrate` | Start autonomous game development |
+| `/neuro-engine:evaluate` | Run quality evaluation tiers |
+| `/neuro-engine:blocker` | Report a blocking issue |
+| `/neuro-engine:status` | Show current progress |
+| `/neuro-engine:validate` | Check prerequisites |
 
 ## Architecture
 
-The plugin operates within the Neuro-Engine 7-layer architecture:
+The plugin is part of the 7-layer Neuro-Engine architecture:
 
-```
-L7: Generative Assets    (meshy, elevenlabs skills)
-L6: Agent Orchestration  (commands, agents)
-L5: Evaluation           (evaluate command, evaluator agent)
-L4: Persistence          (hooks-persist skill)
-L3: Interaction          (scene-polecat agent)
-L2: Observation          (unity-state skill, eyes-polecat)
-L1: Code-First           (script-polecat agent)
-```
+| Layer | Purpose | Plugin Component |
+|-------|---------|------------------|
+| L7 | Asset Generation | `meshy`, `elevenlabs` skills |
+| L6 | Orchestration | `mayor` agent, commands |
+| L5 | Evaluation | `evaluator` agent, `gemini-evaluate` |
+| L4 | Persistence | `hooks-persist` skill |
+| L3 | Interaction | `scene-polecat` agent |
+| L2 | Observation | `unity-state` skill |
+| L1 | Code-First | `script-polecat` agent |
 
-## Hooks
+See [Architecture Documentation](https://github.com/bruno1308/unity-neuro-engine/blob/main/Docs/Architecture.md) for details.
 
-The plugin includes automatic event handlers:
+## Requirements
 
-| Event | Action |
-|-------|--------|
-| `SessionStart` | Show status (context restoration) |
-| `PreToolUse` (MCP) | Quick validation |
-| `PostToolUse` (engine) | Layer review |
-| `PostToolUse` (iteration) | Auto-persist |
+- **Unity 6+** with Universal Render Pipeline
+- **Claude Code** CLI
+- **Unity-MCP** server (included via package)
+- **Python 3.10+** (for asset generation scripts)
 
-## Configuration
+## Related Repositories
 
-### MCP Servers
+| Repository | Description |
+|------------|-------------|
+| [unity-neuro-engine](https://github.com/bruno1308/unity-neuro-engine) | Main Unity project with engine runtime |
+| [unity-neuro-engine-plugin](https://github.com/bruno1308/unity-neuro-engine-plugin) | This plugin (Claude Code integration) |
 
-The plugin requires Unity-MCP for Unity Editor interaction. Configure in `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "unity-mcp": {
-      "command": "uvx",
-      "args": ["--from", "mcpforunityserver", "mcp-for-unity", "--transport", "stdio"]
-    }
-  }
-}
-```
-
-### Environment Variables
-
-Set in project root `.env`:
-
-```
-MESHY_API_KEY=your_meshy_key      # For 3D generation
-ELEVENLABS_API_KEY=your_key       # For audio generation
-GEMINI_API_KEY=your_key           # For video analysis
-```
-
-## Workflow
-
-1. **Create Iteration**: `/neuro:iteration create "Game Name"`
-2. **Edit GDD**: Modify `Assets/Iteration{N}/GDD.md`
-3. **Build**: Manually or via `/neuro:orchestrate start`
-4. **Evaluate**: `/neuro:evaluate all`
-5. **Report Blockers**: `/neuro:blocker "description"` when stuck
-6. **Repeat**: Fix issues, re-evaluate
-
-## Development
-
-### Testing Locally
-
-```bash
-claude --plugin-dir ./neuro-engine
-```
-
-### Plugin Structure
+## Project Structure
 
 ```
 neuro-engine/
-├── .claude-plugin/plugin.json
-├── commands/
-├── skills/
-├── agents/
-├── hooks/hooks.json
-├── .mcp.json
-└── README.md
+├── agents/          # AI agent definitions
+├── commands/        # Slash commands (/neuro-engine:*)
+├── skills/          # Proactive capabilities
+├── hooks/           # Event handlers
+└── CLAUDE.md        # Instructions for Claude
 ```
 
-## Current Status
+## How It Works
 
-- **Layers 1-5**: Implemented (Unity runtime services)
-- **Layer 6**: Plugin provides structure, full orchestration WIP
-- **Layer 7**: Skills defined, API integration ready
-
-## Contributing
-
-When modifying engine core (`Packages/com.neuroengine.core/`):
-1. `layer-review` skill will auto-trigger
-2. Follow layer principles in `Docs/Architecture.md`
-3. Run `/neuro:evaluate 1` before committing
+1. **You** write a Game Design Document (GDD)
+2. **Mayor agent** decomposes it into tasks
+3. **Polecat agents** implement in parallel (scripts, scenes, assets)
+4. **Evaluator** grades the result
+5. **Game Fixer** addresses any issues
+6. Repeat until quality bar is met
 
 ## License
 
-[Your License Here]
+MIT License - See [LICENSE](https://github.com/bruno1308/unity-neuro-engine/blob/main/LICENSE)
+
+## Contributing
+
+Contributions welcome! Please read the [Architecture docs](https://github.com/bruno1308/unity-neuro-engine/blob/main/Docs/Architecture.md) first.
